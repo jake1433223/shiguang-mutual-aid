@@ -1,0 +1,220 @@
+// 拾光互助数据库 schema —— PostgreSQL（生产环境）
+// 使用方式：
+//   DATABASE_URL=postgresql://... npx prisma migrate deploy --schema prisma/schema.postgresql.prisma
+//   npx prisma generate --schema prisma/schema.postgresql.prisma
+//
+// 本地开发请使用默认 schema.prisma（SQLite）
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// 状态字段用字符串 + 应用层校验（与 SQLite 版保持完全一致，方便切换）
+// UserRole:     USER | ADMIN
+// DemandCategory: TECH | DESIGN | TRANSLATE | STUDY | ERRAND | OTHER
+// DemandStatus:   OPEN | IN_PROGRESS | DONE | CANCELLED
+// ApplicationStatus: PENDING | ACCEPTED | REJECTED | COMPLETED | CANCELLED
+// EmailVerificationPurpose: REGISTER | RESET_PASSWORD
+// NotificationType: APPLICATION_ACCEPTED | APPLICATION_REJECTED | DEMANT_COMPLETED | COMMENT_POSTED | SYSTEM | REPORT_RESOLVED | COIN_ADJUSTED
+// ReportReason: SPAM | ABUSE | PORNOGRAPHY | FRAUD | OTHER
+// ReportStatus: PENDING | RESOLVED | DISMISSED
+// ReportTargetType: DEMAND | COMMENT | USER
+// TransactionType: REGISTER_BONUS | DEMAND_FREEZE | DEMAND_RELEASE | DEMAND_REFUND | ADMIN_ADJUST | DEMAND_REWARD
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  password      String    // bcrypt hash
+  name          String
+  avatar        String    @default("U") // 首字母
+  bio           String    @default("") // 角色/简介
+  tier          Int       @default(1) // 1/2/3
+  coins         Int       @default(100) // 拾光币余额，注册送 100
+  creditScore   Int       @default(0) // 信用分
+  role          String    @default("USER") // USER | ADMIN
+  emailVerified DateTime? // 邮箱验证时间，null 表示未验证
+  bannedAt      DateTime? // 封禁时间，null 表示未封禁
+  banReason     String?   // 封禁原因
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  demands        Demand[]
+  applications   Application[]
+  comments       Comment[]
+  testimonial    Testimonial?
+  notifications  Notification[]
+  reports        Report[]     // 我发起的举报
+  transactions   Transaction[]
+  auditLogs      AuditLog[]   // 我作为管理员执行的操作
+
+  @@index([email])
+  @@index([role])
+  @@index([bannedAt])
+}
+
+model Demand {
+  id            String   @id @default(cuid())
+  title         String
+  desc          String
+  category      String // TECH | DESIGN | TRANSLATE | STUDY | ERRAND | OTHER
+  reward        Int // 拾光币
+  status        String   @default("OPEN") // OPEN | IN_PROGRESS | DONE | CANCELLED
+  tags          String   @default("[]") // JSON 字符串，应用层序列化
+  location      String?
+  deadline      DateTime
+  publishedAt   DateTime @default(now())
+  views         Int      @default(0)
+  takenDownAt   DateTime? // 管理员下架时间，null 表示正常
+  takeDownReason String? // 下架原因
+  publisherId   String
+  publisher     User     @relation(fields: [publisherId], references: [id], onDelete: Cascade)
+  applications  Application[]
+  comments      Comment[]
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([category])
+  @@index([status])
+  @@index([publisherId])
+  @@index([takenDownAt])
+}
+
+model Application {
+  id         String   @id @default(cuid())
+  status     String   @default("PENDING") // PENDING | ACCEPTED | REJECTED | COMPLETED | CANCELLED
+  message    String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  demandId   String
+  demand     Demand   @relation(fields: [demandId], references: [id], onDelete: Cascade)
+  helperId   String
+  helper     User     @relation(fields: [helperId], references: [id], onDelete: Cascade)
+
+  @@unique([demandId, helperId])
+  @@index([helperId])
+  @@index([status])
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  content   String
+  rating    Int? // 1-5，可选
+  createdAt DateTime @default(now())
+
+  demandId  String
+  demand    Demand   @relation(fields: [demandId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([demandId, createdAt])
+}
+
+model Testimonial {
+  id        String   @id @default(cuid())
+  content   String
+  rating    Int // 1-5
+  createdAt DateTime @default(now())
+
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([rating])
+}
+
+// ============================================================
+// 以下为运营系统新增表
+// ============================================================
+
+/// 邮箱验证 token（注册验证 + 找回密码共用）
+model EmailVerification {
+  id        String   @id @default(cuid())
+  token     String   @unique // 随机 token（明文存，因为是一次性短时效）
+  email     String   // 目标邮箱
+  purpose   String   // REGISTER | RESET_PASSWORD
+  expiresAt DateTime // 过期时间（通常 30 分钟）
+  usedAt    DateTime? // 使用时间，null 表示未使用
+  createdAt DateTime @default(now())
+
+  @@index([email])
+  @@index([purpose])
+  @@index([expiresAt])
+}
+
+/// 站内通知
+model Notification {
+  id        String   @id @default(cuid())
+  type      String   // APPLICATION_ACCEPTED | APPLICATION_REJECTED | DEMAND_COMPLETED | COMMENT_POSTED | SYSTEM | REPORT_RESOLVED | COIN_ADJUSTED
+  title     String
+  content   String
+  link      String?  // 点击跳转路径，如 /demands/xxx
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, read])
+  @@index([createdAt])
+}
+
+/// 举报（需求/评论/用户）
+model Report {
+  id          String   @id @default(cuid())
+  reason      String   // SPAM | ABUSE | PORNOGRAPHY | FRAUD | OTHER
+  description String?  // 举报人补充说明
+  status      String   @default("PENDING") // PENDING | RESOLVED | DISMISSED
+  resolution  String?  // 管理员处理备注
+  targetType  String   // DEMAND | COMMENT | USER
+  targetId    String   // 目标实体 ID
+  createdAt   DateTime @default(now())
+  resolvedAt  DateTime?
+
+  reporterId String
+  reporter   User     @relation(fields: [reporterId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@index([targetType, targetId])
+  @@index([createdAt])
+}
+
+/// 拾光币交易流水（每一次余额变动都记一条）
+model Transaction {
+  id        String   @id @default(cuid())
+  amount    Int      // 正数=收入，负数=支出
+  balance   Int      // 交易后余额快照
+  type      String   // REGISTER_BONUS | DEMAND_FREEZE | DEMAND_RELEASE | DEMAND_REFUND | ADMIN_ADJUST | DEMAND_REWARD
+  refType   String?  // 关联单据类型：DEMAND | APPLICATION | ADMIN
+  refId     String?  // 关联单据 ID
+  remark    String?  // 备注
+  createdAt DateTime @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([type])
+}
+
+/// 管理员审计日志
+model AuditLog {
+  id         String   @id @default(cuid())
+  action     String   // USER_BAN | USER_UNBAN | USER_COIN_ADJUST | USER_CREDIT_ADJUST | DEMAND_TAKE_DOWN | DEMAND_RESTORE | COMMENT_DELETE | REPORT_RESOLVE | REPORT_DISMISS
+  targetType String?  // USER | DEMAND | COMMENT | REPORT
+  targetId   String?
+  detail     String?  // JSON 字符串，记录操作详情
+  ip         String?
+  createdAt  DateTime @default(now())
+
+  adminId String
+  admin   User   @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@index([adminId])
+  @@index([createdAt])
+  @@index([action])
+}

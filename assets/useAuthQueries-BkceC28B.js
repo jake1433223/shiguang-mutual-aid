@@ -1,0 +1,1 @@
+import{d as n,e as i}from"./query-vendor-Bqs_r1l5.js";import{u as s}from"./index-BI_DcYzX.js";function a(){const t=s(e=>e.login),u=n();return i({mutationFn:e=>t(e),onSuccess:()=>{u.invalidateQueries({queryKey:["auth"]})}})}function c(){const t=s(e=>e.register),u=n();return i({mutationFn:e=>t(e),onSuccess:()=>{u.invalidateQueries({queryKey:["auth"]})}})}export{c as a,a as u};

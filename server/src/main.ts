@@ -64,6 +64,12 @@ async function bootstrap() {
   // 全局前缀
   app.setGlobalPrefix("api");
 
+  // 健康检查（Render 等平台探活用）
+  const httpAdapter = app.getHttpAdapter();
+  httpAdapter.get("/health", (_req: any, res: any) => {
+    res.status(200).send("OK");
+  });
+
   // 全局 ValidationPipe：自动校验 DTO + 白名单过滤
   app.useGlobalPipes(
     new ValidationPipe({

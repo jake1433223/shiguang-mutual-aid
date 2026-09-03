@@ -74,7 +74,7 @@ git push -u origin main
 
 1. 注册 https://railway.app （GitHub 登录，每月 $5 免费额度，个人项目够用）
 2. **New Project → Deploy from GitHub repo** → 选择仓库
-3. 设置 **Root Directory** 为 `server`（设置 → Root Directory）
+3. 保持 **Root Directory** 为仓库根目录（默认为 `/`，不要改成 `server`）。仓库自带的 `railway.json` 会自动进入 `server/` 执行安装、生成 Prisma Client 和构建。
 4. 在 **Variables** 中配置环境变量：
 
    | 变量 | 值 |

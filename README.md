@@ -35,10 +35,12 @@
 ```bash
 cd server
 npm install
-npx prisma migrate dev        # 初始化 SQLite 数据库
-npx prisma db seed            # 创建管理员账号
+npx prisma db push --schema prisma/schema.prisma   # 初始化 SQLite 数据库（本地开发无需迁移历史）
+npx prisma db seed --schema prisma/schema.prisma   # 创建管理员账号
 npm run start:dev             # http://localhost:3000
 ```
+
+> 本地开发使用 SQLite (`prisma/schema.prisma`)；生产环境使用 PostgreSQL (`prisma/schema.postgresql.prisma`) 并执行 `npx prisma migrate deploy --schema prisma/schema.postgresql.prisma`，详见 [DEPLOYMENT.md](./DEPLOYMENT.md)。
 
 ### 2. 前端
 

@@ -2,11 +2,11 @@
   "$schema": "https://railway.app/railway.schema.json",
   "build": {
     "builder": "NIXPACKS",
-    "buildCommand": "cd server && npm install && npx prisma generate --schema prisma/schema.postgresql.prisma && npm run build"
+    "buildCommand": "cd server && npm ci && npx prisma generate --schema prisma/schema.postgresql.prisma && npm run build"
   },
   "deploy": {
-    "startCommand": "cd server && node dist/src/main.js",
-    "healthcheckPath": "/api/stats/overview",
+    "startCommand": "cd server && npx prisma migrate deploy --schema prisma/schema.postgresql.prisma && node dist/src/main.js",
+    "healthcheckPath": "/health",
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 5
   }

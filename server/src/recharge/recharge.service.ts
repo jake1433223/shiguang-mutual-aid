@@ -1,6 +1,7 @@
-﻿import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { CreateRechargeDto, RechargePackageId } from "./dto/recharge.dto";
+import { AlipayProvider, WechatPayProvider } from "./payment";
 
 export interface RechargePackage {
   id: RechargePackageId;
@@ -30,6 +31,42 @@ export class RechargeService {
       totalCoins: p.coins + p.bonus,
     }));
   }
+
+    /**
+     * 创建真实支付订单（支付宝/微信）的接口占位。
+     * 当前不会真实下单、不会真实扣款；正式接入时在 payment.ts 中实现并在此调用。
+     */
+    async createExternalOrder(userId: string, dto: CreateRechargeDto) {
+      const pkg = RECHARGE_PACKAGES.find((p) => p.id === dto.packageId);
+      if (!pkg) throw new NotFoundException("充值套餐不存在");
+      if (dto.method !== "ALIPAY" && dto.method !== "WECHAT") {
+        throw new BadRequestException("外部支付仅支持 ALIPAY 或 WECHAT");
+      }
+
+      const orderNo = `RC${Date.now()}${Math.random().toString(36).slice(2, 8)}`;
+      const amount = pkg.coins + pkg.bonus;
+
+      if (dto.method === "ALIPAY") {
+        const provider = new AlipayProvider();
+        return provider.createOrder({
+          userId,
+          orderNo,
+          amountCoins: amount,
+          amountCents: pkg.price,
+          subject: `拾光互助-${pkg.name}`,
+        });
+      }
+
+      const provider = new WechatPayProvider();
+      return provider.createOrder({
+        userId,
+        orderNo,
+        amountCoins: amount,
+        amountCents: pkg.price,
+        subject: `拾光互助-${pkg.name}`,
+      });
+    }
+
 
   /**
    * 模拟支付确认充值。

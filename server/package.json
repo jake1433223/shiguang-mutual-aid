@@ -6,7 +6,7 @@
   "scripts": {
     "postinstall": "prisma generate --schema prisma/schema.postgresql.prisma",
     "build": "nest build",
-    "start": "nest start",
+    "start": "npx prisma migrate deploy --schema prisma/schema.postgresql.prisma && node dist/src/main.js",
     "start:dev": "nest start --watch",
     "start:prod": "node dist/src/main.js",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",

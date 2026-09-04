@@ -205,7 +205,15 @@ export default function ProfilePage() {
                 <div className="text-2xl font-bold text-foreground tabular-nums">
                   {user.coins}
                 </div>
-                <div className="text-xs text-muted-foreground">拾光币</div>
+                <div className="text-xs text-muted-foreground">
+                    拾光币
+                    <Link
+                      to="/recharge"
+                      className="ml-1 inline-flex items-center text-brand-600 hover:text-brand-700 font-medium smooth-color"
+                    >
+                      充值
+                    </Link>
+                  </div>
               </div>
               <div className="text-center">
                 <div className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 mb-2">

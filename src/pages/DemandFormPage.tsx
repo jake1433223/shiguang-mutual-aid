@@ -224,7 +224,7 @@ export default function DemandFormPage() {
                     className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500 smooth-color"
                   />
                   <p className="mt-1 text-xs text-muted-foreground">
-                    当前余额 {user?.coins ?? 0}，发布后将冻结相应数量
+                    当前余额 {user?.coins ?? 0}，发布后将冻结相应数量。余额不足？<Link to="/recharge" className="text-brand-600 hover:text-brand-700 font-medium smooth-color">去充值</Link>
                   </p>
                 </div>
               </div>

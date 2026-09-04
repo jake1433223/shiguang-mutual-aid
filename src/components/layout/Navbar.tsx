@@ -326,6 +326,15 @@ export function Navbar() {
                           <User className="w-4 h-4" />
                           个人中心
                         </Link>
+                          <Link
+                            to="/recharge"
+                            onClick={() => setUserMenuOpen(false)}
+                            className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-foreground hover:bg-muted smooth-color"
+                          >
+                            <Coins className="w-4 h-4 text-brand-500" />
+                            充值中心
+                          </Link>
+
                         {user.role === "ADMIN" && (
                           <Link
                             to="/admin/dashboard"

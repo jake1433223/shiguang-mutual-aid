@@ -52,6 +52,35 @@ export type ApplicationStatus =
 export type DemandSort = "latest" | "reward-desc" | "applicants-desc";
 
 // ============================================================
+// 充值
+// ============================================================
+
+export type RechargePackageId = "tiny" | "basic" | "pro" | "max";
+
+export interface RechargePackage {
+  id: RechargePackageId;
+  name: string;
+  coins: number;
+  /** 价格，单位：分 */
+  price: number;
+  bonus: number;
+  desc: string;
+  badge?: string;
+  totalCoins: number;
+}
+
+export interface RechargeResult {
+  orderId: string;
+  amount: number;
+  price: number;
+  method: "MOCK" | "ALIPAY" | "WECHAT";
+  paidAt: string;
+  user: User;
+  transaction: Transaction;
+}
+
+
+// ============================================================
 // 实体
 // ============================================================
 
@@ -344,7 +373,8 @@ export type TransactionType =
   | "DEMAND_RELEASE"
   | "DEMAND_REFUND"
   | "ADMIN_ADJUST"
-  | "DEMAND_REWARD";
+  | "DEMAND_REWARD"
+    | "RECHARGE";
 
 export interface Transaction {
   id: string;
@@ -365,6 +395,7 @@ export const TRANSACTION_TYPE_LABELS: Record<TransactionType, string> = {
   DEMAND_REFUND: "需求退款",
   ADMIN_ADJUST: "管理员调整",
   DEMAND_REWARD: "接单奖励",
+    RECHARGE: "充值到账",
 };
 
 export const NOTIFICATION_TYPE_LABELS: Record<NotificationType, string> = {

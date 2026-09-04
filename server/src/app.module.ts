@@ -14,6 +14,7 @@ import { NotificationsModule } from "./notifications/notifications.module";
 import { ReportsModule } from "./reports/reports.module";
 import { AdminModule } from "./admin/admin.module";
 import { StatsModule } from "./stats/stats.module";
+import { RechargeModule } from "./recharge/recharge.module";
 
 @Module({
   imports: [
@@ -48,6 +49,7 @@ import { StatsModule } from "./stats/stats.module";
     ReportsModule,
     AdminModule,
     StatsModule,
+    RechargeModule,
   ],
   providers: [
     {

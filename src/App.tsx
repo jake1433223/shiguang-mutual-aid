@@ -19,6 +19,7 @@ const ResendVerificationPage = lazy(() =>
 const ForgotPasswordPage = lazy(() => import("@/pages/ForgotPasswordPage"));
 const ResetPasswordPage = lazy(() => import("@/pages/ResetPasswordPage"));
 const NotificationsPage = lazy(() => import("@/pages/NotificationsPage"));
+const RechargePage = lazy(() => import("@/pages/RechargePage"));
 const NotFound = lazy(() => import("@/pages/NotFound"));
 const AdminDashboardPage = lazy(() => import("@/pages/admin/AdminDashboardPage"));
 const AdminUsersPage = lazy(() => import("@/pages/admin/AdminUsersPage"));
@@ -65,6 +66,15 @@ export default function App() {
               </ProtectedRoute>
             }
           />
+            <Route
+              path="/recharge"
+              element={
+                <ProtectedRoute>
+                  <RechargePage />
+                </ProtectedRoute>
+              }
+            />
+
           <Route
             path="/demands/new"
             element={

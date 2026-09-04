@@ -1,0 +1,26 @@
+# 拾光互助后端 Dockerfile（用于阿里云 ECS / 任意 Linux 主机）
+FROM node:22-alpine AS builder
+
+WORKDIR /app
+
+COPY server/package.json server/package-lock.json ./
+RUN npm ci
+
+COPY server/ .
+RUN npx prisma generate --schema prisma/schema.postgresql.prisma && npm run build
+
+FROM node:22-alpine
+
+WORKDIR /app
+
+ENV NODE_ENV=production
+ENV PORT=3000
+
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/dist ./dist
+COPY server/package.json server/package-lock.json ./
+COPY server/prisma ./prisma
+
+EXPOSE 3000
+
+CMD ["sh", "-c", "npx prisma migrate deploy --schema prisma/schema.postgresql.prisma && node dist/src/main.js"]

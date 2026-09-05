@@ -1,13 +1,27 @@
-{
+﻿{
   "name": "拾光互助",
   "short_name": "拾光互助",
   "description": "让每一刻空闲都有价值——发布你的小需求，或用碎片时间帮别人一个忙。",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
+  "orientation": "portrait",
   "background_color": "#ffffff",
   "theme_color": "#16a34a",
   "lang": "zh-CN",
   "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
     {
       "src": "/favicon.svg",
       "sizes": "any",

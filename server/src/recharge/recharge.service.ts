@@ -81,7 +81,6 @@ export class RechargeService {
     if (user.bannedAt) throw new BadRequestException("账号已被封禁，无法充值");
 
     const amount = pkg.coins + pkg.bonus;
-    const newBalance = user.coins + amount;
 
     const result = await this.prisma.$transaction(async (tx) => {
       const updated = await tx.user.update({
@@ -93,7 +92,7 @@ export class RechargeService {
         data: {
           userId,
           amount,
-          balance: newBalance,
+          balance: updated.coins,
           type: "RECHARGE",
           refType: "RECHARGE",
           remark: `充值 ${pkg.name}：到账 ${amount} 拾光币`,

@@ -5,10 +5,14 @@ import type { QueryNotificationsParams } from "@/types/api";
 const NOTIFICATIONS_KEY = ["notifications"] as const;
 
 /** 通知列表 */
-export function useNotificationsQuery(params?: QueryNotificationsParams) {
+export function useNotificationsQuery(
+  params?: QueryNotificationsParams,
+  enabled = true,
+) {
   return useQuery({
     queryKey: [...NOTIFICATIONS_KEY, "list", params ?? null],
     queryFn: () => notificationsApi.list(params),
+    enabled,
     staleTime: 30_000,
   });
 }

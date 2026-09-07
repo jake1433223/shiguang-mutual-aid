@@ -45,7 +45,7 @@ export function Navbar() {
   const notifListQuery = useNotificationsQuery({
     page: 1,
     pageSize: 5,
-  });
+  }, !!user);
   const markAllMut = useMarkAllReadMutation();
   const markReadMut = useMarkReadMutation();
 

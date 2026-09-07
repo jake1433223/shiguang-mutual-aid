@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { usePageTitle } from "@/hooks/usePageTitle";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   Mail,
@@ -17,7 +17,10 @@ import { useMagnetic } from "@/hooks/useMagnetic";
 
 export default function ResendVerificationPage() {
   usePageTitle("重发验证邮件");
-  const [email, setEmail] = useState("");
+  const location = useLocation();
+  const registeredEmail =
+    (location.state as { email?: string } | null)?.email ?? "";
+  const [email, setEmail] = useState(registeredEmail);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
   const [submitting, setSubmitting] = useState(false);

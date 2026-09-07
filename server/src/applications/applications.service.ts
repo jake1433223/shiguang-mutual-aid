@@ -144,17 +144,24 @@ export class ApplicationsService {
         throw new BadRequestException("仅待处理申请可被接受");
       }
 
-      // 事务：接受当前申请 + 拒绝其他 PENDING + 需求转 IN_PROGRESS
+      // 事务：原子抢占需求 + 当前申请，避免并发接受重复进入 IN_PROGRESS
       const updated = await this.prisma.$transaction(async (tx) => {
-        const app = await tx.application.update({
-          where: { id: applicationId },
-          data: { status: "ACCEPTED" },
-          include: {
-            demand: { include: { publisher: { select: { id: true, name: true, avatar: true } } } },
-            helper: { select: { id: true, name: true, avatar: true, bio: true, tier: true, creditScore: true } },
-          },
+        const demandClaim = await tx.demand.updateMany({
+          where: { id: demand.id, status: "OPEN" },
+          data: { status: "IN_PROGRESS" },
         });
-        // 其他 PENDING 申请标记为 REJECTED（拿一份 helperId 列表以便发通知）
+        if (demandClaim.count !== 1) {
+          throw new BadRequestException("该需求已不在招募中");
+        }
+
+        const accepted = await tx.application.updateMany({
+          where: { id: applicationId, status: "PENDING" },
+          data: { status: "ACCEPTED" },
+        });
+        if (accepted.count !== 1) {
+          throw new BadRequestException("该申请已不在待处理状态");
+        }
+
         const rejected = await tx.application.findMany({
           where: { demandId: demand.id, status: "PENDING", id: { not: applicationId } },
           select: { helperId: true },
@@ -165,8 +172,14 @@ export class ApplicationsService {
             data: { status: "REJECTED" },
           });
         }
-        // 需求转为进行中
-        await tx.demand.update({ where: { id: demand.id }, data: { status: "IN_PROGRESS" } });
+
+        const app = await tx.application.findUniqueOrThrow({
+          where: { id: applicationId },
+          include: {
+            demand: { include: { publisher: { select: { id: true, name: true, avatar: true } } } },
+            helper: { select: { id: true, name: true, avatar: true, bio: true, tier: true, creditScore: true } },
+          },
+        });
         return { app, rejectedHelperIds: rejected.map((r) => r.helperId) };
       });
 
@@ -219,16 +232,23 @@ export class ApplicationsService {
       }
 
       const updated = await this.prisma.$transaction(async (tx) => {
-        const app = await tx.application.update({
-          where: { id: applicationId },
-          data: { status: "COMPLETED" },
-          include: {
-            demand: { include: { publisher: { select: { id: true, name: true, avatar: true } } } },
-            helper: { select: { id: true, name: true, avatar: true, bio: true, tier: true, creditScore: true } },
-          },
+        // 先原子完成需求，再用申请状态约束，防止重复完成导致二次发奖
+        const demandDone = await tx.demand.updateMany({
+          where: { id: demand.id, status: "IN_PROGRESS" },
+          data: { status: "DONE" },
         });
-        // 需求转为 DONE
-        await tx.demand.update({ where: { id: demand.id }, data: { status: "DONE" } });
+        if (demandDone.count !== 1) {
+          throw new BadRequestException("需求未在进行中或已完成，无法再次结算");
+        }
+
+        const appCompleted = await tx.application.updateMany({
+          where: { id: applicationId, status: "ACCEPTED" },
+          data: { status: "COMPLETED" },
+        });
+        if (appCompleted.count !== 1) {
+          throw new BadRequestException("该申请不是已接受状态，无法标记完成");
+        }
+
         // 给帮手发放奖励
         const helperUpdated = await tx.user.update({
           where: { id: application.helperId },
@@ -255,7 +275,13 @@ export class ApplicationsService {
           where: { id: demand.publisherId },
           data: { creditScore: { increment: 1 } },
         });
-        return app;
+        return tx.application.findUniqueOrThrow({
+          where: { id: applicationId },
+          include: {
+            demand: { include: { publisher: { select: { id: true, name: true, avatar: true } } } },
+            helper: { select: { id: true, name: true, avatar: true, bio: true, tier: true, creditScore: true } },
+          },
+        });
       });
       // 通知帮手：需求已完成
       this.notificationsService.notifyDemandCompleted({

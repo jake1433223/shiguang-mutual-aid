@@ -137,10 +137,16 @@ export class DemandsService {
           _count: { select: { applications: true, comments: true } },
         },
       });
-      // 扣冻结奖励
-      const updated = await tx.user.update({
-        where: { id: userId },
+      // 条件扣款，防止并发请求把余额扣成负数
+      const frozen = await tx.user.updateMany({
+        where: { id: userId, coins: { gte: dto.reward } },
         data: { coins: { decrement: dto.reward } },
+      });
+      if (frozen.count !== 1) {
+        throw new BadRequestException("拾光币不足，无法发布该需求");
+      }
+      const updated = await tx.user.findUniqueOrThrow({
+        where: { id: userId },
         select: { coins: true },
       });
       // 写拾光币流水：DEMAND_FREEZE

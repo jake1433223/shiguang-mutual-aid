@@ -91,18 +91,22 @@ export class UsersService {
 
   /** 我发布的需求 */
   async myDemands(userId: string) {
-    return this.prisma.demand.findMany({
+    const items = await this.prisma.demand.findMany({
+
       where: { publisherId: userId },
       orderBy: { publishedAt: "desc" },
       include: {
         _count: { select: { applications: true, comments: true } },
       },
+    
     });
+    return { items };
   }
 
   /** 我接的单 */
   async myApplications(userId: string) {
-    return this.prisma.application.findMany({
+    const items = await this.prisma.application.findMany({
+
       where: { helperId: userId },
       orderBy: { createdAt: "desc" },
       include: {
@@ -117,6 +121,8 @@ export class UsersService {
           },
         },
       },
+    
     });
+    return { items };
   }
 }

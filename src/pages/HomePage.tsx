@@ -1,4 +1,4 @@
-﻿import { motion } from "framer-motion";
+import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import {
   ArrowRight,
@@ -17,6 +17,10 @@ import {
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { DemandCard } from "@/components/demands/DemandCard";
+import { HowItWorks } from "@/components/sections/HowItWorks";
+import { Categories } from "@/components/sections/Categories";
+import { Leaderboards } from "@/components/sections/Leaderboards";
+import { Rewards } from "@/components/sections/Rewards";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useDemandsQuery } from "@/hooks/queries/useDemandsQueries";
 import { useSiteOverviewQuery } from "@/hooks/queries/useStatsQueries";
@@ -179,6 +183,13 @@ function HomePageInner() {
             ))}
           </div>
         </section>
+
+
+        {/* ===== 运作方式 / 分类 / 排行榜 / 奖励 ===== */}
+        <HowItWorks />
+        <Categories />
+        <Leaderboards />
+        <Rewards />
 
         {/* ===== 最新需求 ===== */}
         <section className="max-w-7xl mx-auto px-6 lg:px-8 mb-14">

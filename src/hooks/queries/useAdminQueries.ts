@@ -5,6 +5,7 @@ import {
   type AdminCommentListParams,
   type AdminDemandListParams,
   type AdminReportListParams,
+  type AdminTransactionListParams,
   type AdminUserListParams,
   type AdjustCoinsPayload,
   type AdjustCreditPayload,
@@ -209,5 +210,16 @@ export function useAdminAuditLogsQuery(params: AdminAuditLogListParams) {
   return useQuery({
     queryKey: [KEY, "audit-logs", params],
     queryFn: () => adminApi.listAuditLogs(params),
+  });
+}
+
+// ============================================================
+// 交易流水
+// ============================================================
+
+export function useAdminTransactionsQuery(params: AdminTransactionListParams) {
+  return useQuery({
+    queryKey: [KEY, "transactions", params],
+    queryFn: () => adminApi.listTransactions(params),
   });
 }

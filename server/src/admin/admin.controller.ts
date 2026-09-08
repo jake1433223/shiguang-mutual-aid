@@ -23,6 +23,7 @@ import {
   AdminCommentListDto,
   AdminDemandListDto,
   AdminReportListDto,
+  AdminTransactionListDto,
   AdminUserListDto,
   BanUserDto,
   ResolveReportDto,
@@ -38,6 +39,11 @@ export class AdminController {
   @Get("stats")
   stats() {
     return this.adminService.getStats();
+  }
+  // 交易流水
+  @Get("transactions")
+  listTransactions(@Query() query: AdminTransactionListDto) {
+    return this.adminService.listTransactions(query);
   }
 
   // ============================================================

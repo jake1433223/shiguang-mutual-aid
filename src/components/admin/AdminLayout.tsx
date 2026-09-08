@@ -13,6 +13,7 @@ import {
   Menu,
   X,
   Bell,
+    Coins,
 } from "lucide-react";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useUnreadCountQuery } from "@/hooks/queries/useNotificationsQueries";
@@ -24,6 +25,7 @@ const NAV_ITEMS = [
   { to: "/admin/comments", label: "评论管理", icon: MessageSquare },
   { to: "/admin/reports", label: "举报管理", icon: Flag },
   { to: "/admin/audit-logs", label: "审计日志", icon: ScrollText },
+    { to: "/admin/transactions", label: "交易流水", icon: Coins },
 ];
 
 export function AdminLayout() {

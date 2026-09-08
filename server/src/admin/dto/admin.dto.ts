@@ -108,6 +108,13 @@ export class AdminDemandListDto extends AdminPaginationDto {
   takenDown?: string; // "true" | "false"
 }
 
+export class AdminTransactionListDto extends AdminPaginationDto {
+  @IsOptional()
+  @IsString()
+  type?: string; // 交易类型
+}
+
+
 export class AdminReportListDto extends AdminPaginationDto {
   @IsOptional()
   @IsString()

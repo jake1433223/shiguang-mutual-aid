@@ -75,6 +75,20 @@ export interface AdminAuditLog {
   admin: { id: string; name: string; email: string } | null;
 }
 
+export interface AdminTransaction {
+  id: string;
+  userId: string;
+  user: { id: string; email: string; name: string; avatar: string } | null;
+  amount: number;
+  balance: number;
+  type: string;
+  refType: string | null;
+  refId: string | null;
+  remark: string | null;
+  createdAt: string;
+}
+
+
 // ============================================================
 // 查询参数
 // ============================================================
@@ -117,6 +131,14 @@ export interface AdminAuditLogListParams {
   action?: string;
 }
 
+export interface AdminTransactionListParams {
+  page?: number;
+  pageSize?: number;
+  type?: string;
+  keyword?: string;
+}
+
+
 // ============================================================
 // 写操作 Payload
 // ============================================================
@@ -152,6 +174,14 @@ export const adminApi = {
   getStats(): Promise<AdminStats> {
     return client.get("/admin/stats");
   },
+
+    // 交易流水
+    listTransactions(
+      params: AdminTransactionListParams = {},
+    ): Promise<Paginated<AdminTransaction>> {
+      return client.get("/admin/transactions", { params });
+    },
+
 
   // 用户管理
   listUsers(params: AdminUserListParams = {}): Promise<Paginated<AdminUser>> {

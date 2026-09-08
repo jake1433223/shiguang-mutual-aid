@@ -1,25 +1,23 @@
-import { Injectable, OnModuleInit, Logger } from "@nestjs/common";
+﻿import { Injectable, OnModuleInit, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import * as nodemailer from "nodemailer";
 import type { Transporter } from "nodemailer";
+import { mkdirSync, writeFileSync } from "fs";
+import { join } from "path";
 
 /**
  * 邮件服务
  *
  * 工作模式：
  * - 真实 SMTP：配置 SMTP_HOST/PORT/USER/PASS 后发送真实邮件
- * - 测试模式：未配置时自动用 Ethereal 假邮箱，邮件预览链接打印到控制台
- *
- * 提供方法：
- * - sendVerificationEmail  注册邮箱验证
- * - sendPasswordResetEmail 找回密码
- * - sendMail               通用发送
+ * - 测试模式：未配置时，把邮件保存到 server/mail-preview/，方便本地/公网调试查看
  */
 @Injectable()
 export class MailService implements OnModuleInit {
   private readonly logger = new Logger(MailService.name);
   private transporter: Transporter | null = null;
   private isTestMode = false;
+  private previewDir = "";
 
   constructor(private config: ConfigService) {}
 
@@ -30,7 +28,6 @@ export class MailService implements OnModuleInit {
     const pass = this.config.get<string>("SMTP_PASS");
 
     if (host && port && user && pass) {
-      // 真实 SMTP
       this.transporter = nodemailer.createTransport({
         host,
         port: Number(port),
@@ -40,20 +37,17 @@ export class MailService implements OnModuleInit {
       this.isTestMode = false;
       this.logger.log(`✅ 邮件服务已连接 SMTP: ${host}:${port}`);
     } else {
-      // Ethereal 测试模式：邮件不会真正发送，预览链接打印到控制台
+      this.isTestMode = true;
+      this.previewDir =
+        this.config.get<string>("MAIL_PREVIEW_DIR") ||
+        join(process.cwd(), "mail-preview");
       try {
-        const testAccount = await nodemailer.createTestAccount();
-        this.transporter = nodemailer.createTransport({
-          host: "smtp.ethereal.email",
-          port: 587,
-          secure: false,
-          auth: { user: testAccount.user, pass: testAccount.pass },
-        });
-        this.isTestMode = true;
-        this.logger.warn(`⚠️  邮件服务运行在测试模式（Ethereal），邮件不会真正发送`);
-        this.logger.log(`测试账号: ${testAccount.user}`);
+        mkdirSync(this.previewDir, { recursive: true });
+        this.logger.warn(
+          `⚠️ 邮件服务运行在测试模式，邮件将保存到: ${this.previewDir}`,
+        );
       } catch (e) {
-        this.logger.error(`❌ 创建测试邮件账号失败：${(e as Error).message}`);
+        this.logger.error(`❌ 创建邮件预览目录失败：${(e as Error).message}`);
       }
     }
   }
@@ -105,23 +99,34 @@ export class MailService implements OnModuleInit {
 
   /** 通用邮件发送 */
   async sendMail(to: string, subject: string, html: string): Promise<void> {
-    if (!this.transporter) {
-      throw new Error("邮件服务未初始化");
+    if (this.isTestMode || !this.transporter) {
+      const filename = `preview-${Date.now()}-${Math.random()
+        .toString(36)
+        .slice(2, 8)}.html`;
+      const filePath = join(this.previewDir || "mail-preview", filename);
+      try {
+        mkdirSync(this.previewDir || "mail-preview", { recursive: true });
+        writeFileSync(
+          filePath,
+          `<!doctype html><html><head><meta charset="utf-8"><title>${subject}</title></head><body><p><strong>收件人:</strong> ${to}</p><p><strong>主题:</strong> ${subject}</p>${html}</body></html>`,
+          "utf8",
+        );
+        this.logger.log(
+          `📧 [测试] 邮件已写入: ${filePath}（收件人: ${to}）`,
+        );
+      } catch (e) {
+        this.logger.error(`❌ 测试邮件写入失败：${(e as Error).message}`);
+      }
+      return;
     }
+
     const info = await this.transporter.sendMail({
       from: this.getFrom(),
       to,
       subject,
       html,
     });
-    if (this.isTestMode) {
-      const previewUrl = nodemailer.getTestMessageUrl(info);
-      this.logger.log(
-        `📧 [测试] 邮件已发送到 ${to}，预览链接：${previewUrl}`,
-      );
-    } else {
-      this.logger.log(`📧 邮件已发送到 ${to}，主题：${subject}`);
-    }
+    this.logger.log(`📧 邮件已发送到 ${to}，主题：${subject}, id=${info.messageId}`);
   }
 
   /** 渲染统一邮件模板 */

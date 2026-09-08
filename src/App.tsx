@@ -27,6 +27,7 @@ const AdminDemandsPage = lazy(() => import("@/pages/admin/AdminDemandsPage"));
 const AdminCommentsPage = lazy(() => import("@/pages/admin/AdminCommentsPage"));
 const AdminReportsPage = lazy(() => import("@/pages/admin/AdminReportsPage"));
 const AdminAuditLogsPage = lazy(() => import("@/pages/admin/AdminAuditLogsPage"));
+const AdminTransactionsPage = lazy(() => import("@/pages/admin/AdminTransactionsPage"));
 
 /** 页面级加载占位 */
 function PageFallback() {
@@ -104,6 +105,8 @@ export default function App() {
             <Route path="comments" element={<AdminCommentsPage />} />
             <Route path="reports" element={<AdminReportsPage />} />
             <Route path="audit-logs" element={<AdminAuditLogsPage />} />
+              <Route path="transactions" element={<AdminTransactionsPage />} />
+
           </Route>
 
           <Route path="*" element={<NotFound />} />

@@ -13,6 +13,7 @@ import {
   AdminCommentListDto,
   AdminDemandListDto,
   AdminReportListDto,
+  AdminTransactionListDto,
   AdminUserListDto,
   BanUserDto,
   ResolveReportDto,
@@ -238,6 +239,64 @@ export class AdminService {
       recent7dDemands,
     };
   }
+
+  // ============================================================
+  // 交易流水
+  // ============================================================
+
+  async listTransactions(query: AdminTransactionListDto) {
+    const { page = 1, pageSize = 20, type, keyword } = query;
+    const where: any = {};
+
+    if (type) where.type = type;
+    if (keyword && keyword.trim()) {
+      where.OR = [
+        { remark: { contains: keyword.trim() } },
+        { refId: { contains: keyword.trim() } },
+        { user: { email: { contains: keyword.trim() } } },
+        { user: { name: { contains: keyword.trim() } } },
+      ];
+    }
+
+    const [items, total] = await Promise.all([
+      this.prisma.transaction.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+        include: {
+          user: {
+            select: {
+              id: true,
+              email: true,
+              name: true,
+              avatar: true,
+            },
+          },
+        },
+      }),
+      this.prisma.transaction.count({ where }),
+    ]);
+
+    return {
+      items: items.map((t) => ({
+        id: t.id,
+        userId: t.userId,
+        user: t.user,
+        amount: t.amount,
+        balance: t.balance,
+        type: t.type,
+        refType: t.refType,
+        refId: t.refId,
+        remark: t.remark,
+        createdAt: t.createdAt.toISOString(),
+      })),
+      total,
+      page,
+      pageSize,
+    };
+  }
+
 
   // ============================================================
   // 用户管理
